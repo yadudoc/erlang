@@ -1,0 +1,18 @@
+-module(infloop).
+-export([loop/1]).
+
+loop()->
+    receive
+	{cont}->
+	    loop();
+	{term}->
+	    io:format("Terminating");
+    after
+	10000->
+	    io:format("Exiting from timeout")
+    end.
+
+
+	
+
+	    

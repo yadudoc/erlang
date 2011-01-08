@@ -1,0 +1,15 @@
+%drop every nth element from a list
+
+
+-module(dropnth).
+-export([dropn/2]).
+
+dropn(List, Index)->
+    drop(List, Accum, 1, Index).
+
+drop([], Accum, _, _)->
+    lists:reverse(Accum);
+drop([H|T], Accum, Index, Index)->
+    drop(T, Accum, 1, Index);
+drop([H|T], Accum, Temp, Index) ->
+    drop(T, [H|Accum], Temp+1, Index).

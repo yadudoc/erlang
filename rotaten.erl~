@@ -1,0 +1,26 @@
+% rotate a list n times to the left or to the right
+
+
+
+-module(rotaten).
+-module([turn/3]).
+
+
+turn(List, N, left) ->
+    turnl(List, N, 1);
+turn(List, N, right) ->
+    turnr(List, N, 1).
+
+turnl(List, N, N) ->
+    List;
+turnl([H|T], N, Index) ->
+    turnl(lists:append(T,[H]), N, Index+1).
+
+R = fun(List) ->
+	    lists:reverse(List) 
+    end.
+	    
+
+turnr(List, N, N) ->
+    R(turnl(R(list), N, 1)).
+    
