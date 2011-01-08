@@ -1,15 +1,13 @@
 -module(lib_misc).
 -export([sleep/1]).
 
-sleep(T)
-    ->
+sleep(T) ->
     receive
     after T ->
     	  true
     end.
 
-flush_buffer()
-    ->
+flush_buffer() ->
     receive
 	_Any ->
 	     flush_buffer()
@@ -18,8 +16,7 @@ flush_buffer()
 	  true
     end.
 
-priority_receive()
-    ->
+priority_receive() ->
     receive
 	{alarm, X} 
 		->
