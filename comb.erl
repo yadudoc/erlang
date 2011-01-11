@@ -9,36 +9,56 @@
 % C([a,b,c,d,e],3) = a append C([b,c,d,e],2) + C([b,c,d,e],3)
 
 -module(comb).
--export([c/2]).
+-export([c/2, appendtoeach/2]).
 
 
 c(List, N) ->
-    c(List, N, [[]]).
+    c(List, N, [], N).
 
-% handle the case with no List passed , this should not happen ideally
-c([], _, Acc)->
-    Acc;
-% case in which we attempt C(N,1) which results each N items
-c(List, 1, Acc) ->
-    [ lists:append(H,[T]) || H<-Acc,
-			     T<-List ];
-% the guard is wrong and was done inorder to check C(5,3) condition
-c([H|T], N, Acc) when 3 > N ->
-    c(T, N-1, [ lists:append(A,[H]) || A<-Acc ]);
-% the core statement
-% take the head and append to every list returned by combinations 
-% of element in the tail with one less item
-% also consider the combinations of the same number but from the 
-% tail.
-c([H|T], N, Acc) ->				                	
-    c(T, N-1, [ lists:append(A,[H]) || A<-Acc ]),
-    c(T, N, Acc).
+
+c([H|T], 1, Acc, Nmax) ->
+    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],1]),
+    c(T, 1, Acc, Nmax),
+    [[X] || X<-[H|T]];       
+
+c([H|T], N, Acc, Nmax) ->			
+    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],N]),
+    S = c(T, N-1, [], Nmax),
+%    io:format("Testing  with result ~p and head ~p~n",S),
+%    [X|Y] = appendtoeach(H, S) ,   
+%    io:format("check T: ~p with N: ~p~n",[T,N]),
+%    lists:append(Acc, appendtoeach(H, S) ),
+    io:format("Result at level : ~p with N: ~p~n",[appendtoeach(H, S), N]),
+    
+    Len = len(T),
+    if
+	Len > N, Len >= Nmax ->	    
+	    io:format("Attemption for array: ~p  with N: ~p~n",[T,N]),
+	    io:format("Result from C(N-1,R): ~p~n",c(T, N, [], Nmax) );
+%	    io:format("Testing  ~p~n",[c(T,N,[])]);
+	Len =:= N, Len >= Nmax ->
+	    lists:append(Acc, [T]);
+	true ->
+	    ok
+    end.
+
+
+
 
 % Find the length of the list passed to it.
 len([]) ->
     0;
 len([_|T]) ->
     1 + len(T).
+
+% appends an element A to each element in the list 
+appendtoeach(A, List) ->
+    appendtoeach(A, List, []).   
+appendtoeach(_, [], Acc) ->
+    Acc;
+appendtoeach(A, [H|T], Acc) ->
+    appendtoeach(A, T, lists:append(Acc, [lists:append([A],H)])).
+
     
     
 
