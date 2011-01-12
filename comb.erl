@@ -12,8 +12,10 @@
 -export([c/2, appendtoeach/2, len/1]).
 
 
-c(List, N) ->   
+c(List, N) ->       
     c(List, N, N).
+    
+
 
 
 c([H|T], 1, _) ->
@@ -29,14 +31,15 @@ c([H|T], N, Nmax) ->
 %    [X|Y] = appendtoeach(H, S) ,   
 %    io:format("check T: ~p with N: ~p~n",[T,N]),
 %    lists:append(Acc, appendtoeach(H, S) ),
+
     X = appendtoeach(H, S),
     if
 	N =:= Nmax ->
-	    ok;
+	    [];
 %	    io:format("Result at level : ~p with N: ~p~n",[X , N]);
 
 	true ->
-	    ok
+	    []
     end,
     Len = len(T),
     if
@@ -51,7 +54,7 @@ c([H|T], N, Nmax) ->
 	Len =:= N , Len >= Nmax ->
 	    lists:append(X,[T]);	
 	true ->
-	    ok
+	    []
     end
     .
 
@@ -67,6 +70,9 @@ len([_|T]) ->
 % appends an element A to each element in the list 
 appendtoeach(A, List) ->
     appendtoeach(A, List, []).   
+
+appendtoeach(A, ok, _) ->
+    io:format("Error: appendtoeach passed (~p, ~p)~n",[A,ok]);
 appendtoeach(_, [], Acc) ->
     Acc;
 appendtoeach(A, [H|T], Acc) ->
