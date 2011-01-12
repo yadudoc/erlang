@@ -9,45 +9,51 @@
 % C([a,b,c,d,e],3) = a append C([b,c,d,e],2) + C([b,c,d,e],3)
 
 -module(comb).
--export([c/2, appendtoeach/2]).
+-export([c/2, appendtoeach/2, len/1]).
 
 
-c(List, N) ->
-    c(List, N, [], N).
+c(List, N) ->   
+    c(List, N, N).
 
 
-c([H|T], 1, _, _) ->
-    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],1]),
+c([H|T], 1, _) ->
+%    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],1]),
     [[X] || X<-[H|T]];       
 
-c([H|T], N, Acc, Nmax) ->			
-    io:format("Current Head: ~p~n",[H]),
-    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],N]),
-    S = c(T, N-1, [], Nmax),
+c([H|T], N, Nmax) ->			
+%    io:format("Current Head: ~p~n",[H]),
+%    io:format("Attempting for array: ~p with N: ~p~n",[[H|T],N]),
+    S = c(T, N-1, Nmax),
 %    ##### Debugging stuff only ########
 %    io:format("Testing  with result ~p and head ~p~n",S),
 %    [X|Y] = appendtoeach(H, S) ,   
 %    io:format("check T: ~p with N: ~p~n",[T,N]),
 %    lists:append(Acc, appendtoeach(H, S) ),
     X = appendtoeach(H, S),
-    io:format("Result at level : ~p with N: ~p~n",[X , N]),
-    
+    if
+	N =:= Nmax ->
+	    ok;
+%	    io:format("Result at level : ~p with N: ~p~n",[X , N]);
+
+	true ->
+	    ok
+    end,
     Len = len(T),
     if
 	Len =:= 2 ->
 	    lists:append(X,[T]);
-	Len > N , Len > 0 ->	    
+	Len > N , Len >= Nmax ->	    
 %	    Y = c(T, N, [], Nmax),
 %	    io:format("Attemption for array: ~p  with N: ~p~n",[T,N]),
 %	    io:format("Result from C(N-1,R): ~p~n",Y ),
-	    lists:append(X, c(T, N, [], Nmax) );
+	    lists:append(X, c(T, N, Nmax) );
 %	    io:format("Testing  ~p~n",[c(T,N,[])]);	       
-	Len =:= N , Len > 0 ->
+	Len =:= N , Len >= Nmax ->
 	    lists:append(X,[T]);	
 	true ->
 	    ok
-    end,
-    X.
+    end
+    .
 
 
 
