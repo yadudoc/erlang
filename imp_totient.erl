@@ -20,7 +20,7 @@ phi(N) ->
 phi([] , Acc) ->
     Acc;
 phi([[Freq,Prime]|T], Acc) ->
-    phi(T, Acc * ( (Prime - 1)*power(Prime, Freq-1) ) ).
+    phi(T, Acc * ( (Prime - 1)*power:exp(Prime, Freq-1) ) ).
 
 
 power(N, Power) ->
