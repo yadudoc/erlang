@@ -22,7 +22,8 @@
 threaded_phi(N) ->    
     Parent = self(),
     Pids = for(1, N, fun(X,Y) -> spawn(fun()-> ncheck(X,Y,Parent) end) end),
-    io:format("The totient function phi(~p) : ~p ~n",[N, listen(Pids, 0) ]).
+%    io:format("The totient function phi(~p) : ~p ~n",[N, listen(Pids, 0) ]).
+    listen(Pids, 0).
     
 listen([], Count) ->
 %    io:format("Server ~p: All results collated ~n",[self()]),
