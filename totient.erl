@@ -52,7 +52,7 @@ ncheck(A, B, Parent)->
 
 
 
-for(N, N, F) ->
+for(N, N, _) ->
     [];
 for(I, N, F) ->
     [F(I,N) | for(I+1, N, F)].
