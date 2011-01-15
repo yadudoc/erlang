@@ -11,22 +11,22 @@
 do(N) when N < 3 ; N rem 2 =/= 0 ->
     error_not_goldbach_number;
 do(N) ->
-    attempt(N, list_of_primes:primes(N)).
+    attempt(N, list_of_primes:primes(N),[]).
 
 
-attempt(N, []) ->
-    io:format("~p is an issue, no primes found to sum upto ~p~n",[N,N]);
-attempt(N, [H|T]) -> 
+attempt(_, [], Acc) ->
+    lists:reverse(Acc);
+attempt(N, [H|T], Acc) -> 
     case search( N-H , T ) of
 	true ->
-	    {H,N-H};
+	    attempt(N, lists:subtract(T,[N-H]), [{H,N-H}|Acc] );
 	false ->
-	    attempt(N, T)
+	    attempt(N, T, Acc)
     end.
 
-search(Val, [])->
+search(_, [])->
     false;
-search(Val, [Val|T]) ->
+search(Val, [Val|_]) ->
     true;
 search(Val, [_|T]) ->
     search(Val, T).
