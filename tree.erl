@@ -1,5 +1,5 @@
 -module(tree).
--export([insert/2, insertlist/2, search/2]).
+-export([check/1, insert/2, insertlist/2, search/2]).
 
 
 % We are bulding a binary search tree.
@@ -10,6 +10,22 @@
 
 % Inserts an Item into the Tree using the basic rules
 % of binary search trees
+
+check([_ , Left, Right]) ->
+    if 
+	Left =/= null ->
+	    check(Left);
+	Right =/= null ->
+	    check(Right);
+	true ->
+	    ok
+    end,
+    true;
+check(_) ->
+    false.
+    
+
+
 insert(Tree, Item ) ->     
     insert(Tree, Item, []).
 insert(null, Item, []) ->
