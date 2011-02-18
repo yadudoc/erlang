@@ -25,15 +25,12 @@ check(_) ->
     false.
     
 
-
-insert(Tree, Item ) ->     
-    insert(Tree, Item, []).
-insert(null, Item, []) ->
+insert(null, Item) ->
     [Item, null, null];
-insert([Node, Left, Right], Item, []) when Node >= Item ->
-    [Node, insert(Left, Item, []), Right] ;
-insert([Node, Left, Right], Item, []) when Node < Item ->
-    [Node, Left, insert(Right, Item, [])].
+insert([Node, Left, Right], Item) when Node >= Item ->
+    [Node, insert(Left, Item), Right] ;
+insert([Node, Left, Right], Item) when Node < Item ->
+    [Node, Left, insert(Right, Item)].
 
 
 % Inserts a list of values in order to the binary search
