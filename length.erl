@@ -1,3 +1,6 @@
+% P04
+% Find the number of elements in a list
+
 -module(length).
 -export([len/1]).
 
