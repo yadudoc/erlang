@@ -1,7 +1,7 @@
-%slice is a cut of a given list 
-%for eg. [1,2,3,4,5,6], slice from 2 to 3 returns [2,3,4]
+% P18
+% Extract a slice, slice is a cut of a given list 
+% for eg. [1,2,3,4,5,6], slice from 2 to 3 returns [2,3,4]
 % Params : List, Start_index, Length
-
 
 
 % two methods
@@ -31,7 +31,6 @@ cuttill([H|_], Len, Len) ->
     [H];
 cuttill([H|T], Len, Temp)->
     [H| cuttill(T,Len,Temp+1)].
-
 
 
 splice([], _, _, _, _) ->

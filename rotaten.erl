@@ -1,6 +1,9 @@
+% P19
 % rotate a list n times to the left or to the right
 -module(rotaten).
--export([turn/3]).
+-export([
+	 turn/3
+	]).
 
 
 turn(List, N, left) ->

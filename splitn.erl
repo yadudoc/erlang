@@ -1,5 +1,8 @@
-% split file at specified position
+% P17
+% split list at specified position
 
+% splitat([1,2,3,4,5],3) -->
+% [ [1,2], [3,4,5] ]
 -module(splitn).
 -export([splitat/2]).
 
