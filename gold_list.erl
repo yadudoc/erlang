@@ -1,3 +1,5 @@
+% P41
+% A list of Goldbach compositions.
 -module(gold_list).
 -export([list/2, list/3]).
 

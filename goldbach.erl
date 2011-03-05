@@ -1,3 +1,5 @@
+% P40
+% Goldbach's conjencture
 -module(goldbach).
 -export([do/1]).
 

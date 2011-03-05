@@ -1,3 +1,5 @@
+% P31
+% Determine whether a given number is prime
 -module(is_prime).
 -export([check/1, check/2]).
 

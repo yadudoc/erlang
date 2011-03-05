@@ -1,3 +1,5 @@
+% P35
+% Determine the prime factors of a given integers
 -module(prime_factor).
 -export([pf/1]).
 

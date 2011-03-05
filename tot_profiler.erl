@@ -1,4 +1,6 @@
--module(profiler).
+% P38
+% Compare the two methods of calculating Euler's totient function.
+-module(tot_profiler).
 -export([do/1]).
 
 

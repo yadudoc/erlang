@@ -1,3 +1,5 @@
+% P32
+% Determine the greatest common divisor of two positive integer numbers
 -module(gcd).
 -export([gcd/2]).
 

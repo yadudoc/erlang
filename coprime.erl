@@ -1,3 +1,5 @@
+% P33
+% Determing whether two positive integer numbers are coprime
 -module(coprime).
 -export([check/2]).
 

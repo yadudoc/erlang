@@ -1,3 +1,5 @@
+% P39
+% A list of prime numbers
 -module(list_of_primes).
 -export([naive/1, primes/1, profile/1]).
 

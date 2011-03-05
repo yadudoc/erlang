@@ -1,3 +1,4 @@
+% P34 
 % Calculate Euler's totient function
 
 % The euler's totient function phi(m) for a number m is given by the count

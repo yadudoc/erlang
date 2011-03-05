@@ -1,3 +1,5 @@
+% P36
+% Determine the prime factors of a given positive integer (2).
 % returns a list of factors of the given number N
 
 -module(factors).
