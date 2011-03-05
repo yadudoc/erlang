@@ -1,7 +1,11 @@
-%return list containing integers between a given range
+% P22
+% return list containing integers between a given range
 
 -module(range).
--export([in/2]).
+-export([
+	 in/2,
+	 range/2
+	]).
 
 
 in(A, B) when A > B ->
@@ -24,4 +28,9 @@ gen(B, B)->
 gen(A, B)->
     [A|gen(A+1, B)].
 
-	      
+% Create range
+% simpler logic	      
+range(B,B) ->
+    [B];
+range(A,B) ->
+    [ A | range(A+1, B)].
