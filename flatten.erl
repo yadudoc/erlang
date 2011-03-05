@@ -1,3 +1,6 @@
+% P07
+% Flatten a nested list structure
+
 -module(flatten).
 -export([flatten_list/1]).
 
