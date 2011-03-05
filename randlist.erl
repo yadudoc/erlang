@@ -1,4 +1,7 @@
+% P25
 % Return the list with randomised ordering of the list elements
+% In other words generate a random permutation of the elements
+% in a given list
 
 -module(randlist).
 -export([rand/1, len/1, getnth/2]).
