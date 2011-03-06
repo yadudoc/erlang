@@ -1,7 +1,15 @@
-
+% P57
+% Binary search trees (dictionaries)
+% Use the predicate add/3,
+% developed in chapter 4 of the course,
+% to write a predicate to construct a binary search tree from a list of integer 
+% numbers.
 -module(tree).
--export([insert/2, insertlist/2, search/2]).
-
+-export([
+	 insert/2, 
+	 insertlist/2, 
+	 search/2
+	]).
 
 % We are bulding a binary search tree.
 % The first element passed must be of the form
