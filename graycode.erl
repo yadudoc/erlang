@@ -1,9 +1,10 @@
-%% P49 (**) Gray code.
+% P49 
+%(**) Gray code.
 
 %% An n-bit Gray code is a sequence of n-bit strings constructed according to certain rules. For example,
 %% n = 1: C(1) = ['0','1'].
 %% n = 2: C(2) = ['00','01','11','10'].
-%% n = 3: C(3) = ['000','001','011','010',´110´,´111´,´101´,´100´].
+%% n = 3: C(3) = ['000','001','011','010','110','111','101','100'].
 
 %% Find out the construction rules and write a predicate with the following specification:
 
@@ -13,37 +14,27 @@
 
 
 -module(graycode).
+-export([
+	 gray/1,
+	 gray_tail/1
+	]).
 
--export([gray/1]).
 
-%% LOGIC:
-%% Constructing an n-bit gray code by Binary Reflection
-%%   n = 1                   n = 2                                 n = 3
-%%  +--0     0  => (prepend 0) 00                    => (prepend 0) 000
-%%  |  1-+   1  => (    ""   ) 01                    => (   ""   0) 001
-%%  |  --|----------------------- (reflection line)
-%%  |    +-> 1  => (prepend 1) 11                    => (   ""   0) 011
-%%  +------> 0  => (prepend 1) 10                    => (   ""   0) 010
-%%                             ------------------------------------------ (reflection line)
-%%                             10                    => (prepend 1) 110
-%%                             11                    => (   ""   1) 111
-%%                             01                    => (   ""   1) 101
-%%                             00                    => (   ""   1) 100
-%%                                                                  ----------------------- ......
-%% Logic In Words:
-%% take (n - 1)th gray code, and make a reflection of it. Append reversed (or reflected) list on to the original
-%% list. Prepend Orginal list elements with "0" and reversed list elements with "1". This will give you nth gray code
-
-%% TODO:
-%% do the same using binary operations :-)
-
+gray(1) ->
+    ['0','1'];
 gray(N) ->
-    gray( N, [ '0','1' ]).
+    lists:append(
+      [list_to_atom(atom_to_list(X) ++ "0") || X <- gray(N-1) ],
+      [list_to_atom(atom_to_list(X) ++ "1") || X <- gray(N-1) ]
+      ).
 
-gray(1, Acc) ->
+gray_tail(N) ->
+    gt(N, ['0','1']).
+
+gt(1, Acc) ->
     Acc;
-gray(N, Acc) ->
-    A = [ list_to_atom( "0" ++ atom_to_list(X) ) || X <-Acc ],
-    B = [ list_to_atom( "1" ++ atom_to_list(X) ) || X <-Acc ],
-    gray( N-1, lists:append(A, B) ).
-				      
+gt(N, Acc) ->
+    gt(N-1, lists:append(
+	      [ list_to_atom(atom_to_list(X) ++ "0") || X <- Acc ],
+	      [ list_to_atom(atom_to_list(X) ++ "1") || X <- Acc ]
+	     )). 
