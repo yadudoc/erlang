@@ -1,4 +1,4 @@
-% P62
+% P61A
 % Collect the leaves in a binary tree into a list
 -module(collect_leaves).
 -export([
