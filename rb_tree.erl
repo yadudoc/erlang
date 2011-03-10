@@ -9,8 +9,7 @@
 -module(rb_tree).
 -export([
 	 insert/2,
-	 insertlist/2,
-	 prettyprint/1
+	 insertlist/2
 	 ]).
 
 
@@ -66,18 +65,17 @@ case1(Tree, Item) ->
 
 
 % Converting Zig-Zag shape to Zig-Zig
-%      A          A              A           A
-%     /          /                \ 	      \
-%    B    =>    B      and         B   =>      B
-%     \        /                  /             \
-%      C      C                  C               C 
+%      A          A              A         A
+%     /          /                \ 	    \
+%    B    =>    C      and         B   =>    C
+%     \        /                  /           \
+%      C      B                  C             B 
 case2( [{G, _}, [{L,red}, Ll, [{Item, red}, Lrl, Lrr]], R] ,
        Item) ->
-    case3([{G, red}, [{Item, black}, [{L, red}, Ll, Lrl], Lrr ], R], Item);
+    case3([{G, red}, [{Item, black}, [{L, red}, Ll, Lrl], Lrr ], R], L);
 case2( [{G, _},L,[{R, red}, [{Item,red}, Rll, Rlr], Rr]],
        Item) ->
-    case3([{G, red}, L,  [{Item, black}, Rll, [{R, red}, Rlr, Rr]]], Item);
-
+    case3([{G, red}, L,  [{Item, black}, Rll, [{R, red}, Rlr, Rr]]], R);
 case2( Tree, Item)  ->
     case3(Tree, Item).
 
@@ -92,11 +90,24 @@ case2( Tree, Item)  ->
 %	   [{R, Rc}, Rl, Rr]
 %	  ], R) ->
 
-case3([{G, red}, [{Item, black}, L, Lr ], R], Item) ->    
-    [{Item, black}, L, [{G, red}, Lr, R]];
+case3(
+  [{G, _}, 
+   [{L, _}, [{Ll,Lc},Lll,Llr], Lr ],
+   R
+  ],
+  Ll) ->    
 
-case3([{G, red}, L, [{Item, black}, Rl, R]], Item) ->
-    [{Item, black}, [{G, red}, L, Rl], R];
+    [{L, black}, [{Ll,Lc},Lll,Llr], [{G, red}, Lr, R]];
+
+case3([{G, _}, 
+       L, 
+       [{R, _}, Rl, [{Rr,Rrc}, Rrl, Rrr]   ]
+      ],
+      Rr) ->
+    [{R, black}, 
+     [{G, red}, L, Rl], 
+     [{Rr,Rrc}, Rrl, Rrr]
+    ];
 
 case3(Tree, _)->   
     Tree.
