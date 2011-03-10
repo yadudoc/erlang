@@ -9,7 +9,8 @@
 -module(rb_tree).
 -export([
 	 insert/2,
-	 insertlist/2	 
+	 insertlist/2,
+	 prettyprint/1
 	 ]).
 
 
@@ -99,7 +100,3 @@ case3([{G, red}, L, [{Item, black}, Rl, R]], Item) ->
 
 case3(Tree, _)->   
     Tree.
-
-
-    
-    
