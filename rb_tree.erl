@@ -47,10 +47,10 @@ root_sanity(null) ->
 % then, all we need to do is change the color of the parent
 % and uncle to black and that of the grandparent to red.
 case1([{G,black}, 
-       [{L,red}, [{Lr, red}, Lll, Llr], Lr ], 
+       [{L,red}, [{Lr, red}, Lll, Llr], Ll ], 
        [{R,red},Rl,Rr]
       ]) ->
-    [{G,red}, [{L,black}, [{Lr, red}, Lll, Llr],Lr], [{R,black},Rl,Rr]];
+    [{G,red}, [{L,black}, [{Lr, red}, Lll, Llr],Ll], [{R,black},Rl,Rr]];
 case1([{G,black}, 
        [{L,red}, Ll, [{Lr, red}, Lrl, Lrr]],
        [{R,red},Rl,Rr]
@@ -61,7 +61,7 @@ case1([{G,black},
        [{R,red},[{Rl,red},Rll,Rlr], Rr]
       ]) ->
     [{G,red}, [{L,black}, Ll, Lr],[{R,black}, [{Rl,red},Rll,Rlr], Rr]];
-case1([{G,black}, 
+case1([{G,black},
        [{L,red}, Ll, Lr],
        [{R,red}, Rl, [{Rr,red},Rrl,Rrr]]
       ]) ->
