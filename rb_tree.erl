@@ -9,9 +9,13 @@
 -module(rb_tree).
 -export([
 	 insert/2,
-	 insertlist/2
+	 insertlist/2,
+	 insertlist/1
 	 ]).
 
+%default inserts a list into empty tree
+insertlist(List)->
+    insertlist(null, List).
 
 % insert a list of items into the rb_tree
 insertlist( Tree, [H|T] ) ->
@@ -28,9 +32,9 @@ ins( null, Item ) ->
 ins([{Item ,C}, Left, Right], Item ) ->
     [{Item ,C}, Left, Right];
 ins([{N,C}, Left, Right], Item ) when Item < N ->
-    case1( [{N,C}, ins(Left, Item), Right], Item);
+    case1( [{N,C}, ins(Left, Item), Right] );
 ins([{N,C}, Left, Right], Item ) when Item > N ->
-    case1( [{N,C}, Left, ins(Right, Item)], Item).
+    case1( [{N,C}, Left, ins(Right, Item)] ).
 
 root_sanity([{Root, _}, Left, Right]) ->
     [{Root, black}, Left, Right];
@@ -42,26 +46,28 @@ root_sanity(null) ->
 % If the sibling of the parent i.e the uncle is also red
 % then, all we need to do is change the color of the parent
 % and uncle to black and that of the grandparent to red.
-case1([{G,_}, 
-       [{L,red}, [{Item, red}, Lll, Llr], Lr ], 
-       [{R,red},Rl,Rr]], 
-	Item) ->
-    [{G,red}, [{L,black}, [{Item, red}, Lll, Llr],Lr], [{R,black},Rl,Rr]];
-case1([{G,_}, 
-       [{L,red}, Ll, [{Item, red}, Lrl, Lrr]],
-       [{R,red},Rl,Rr]],
-	Item) ->
-    [{G,red}, [{L,black}, Ll, [{Item, red}, Lrl, Lrr]],[{R,black},Rl,Rr]];
-case1([{G,_}, [{L,red}, Ll, Lr], [{R,red},[{Item,red},Rll,Rlr], Rr]],
-	Item) ->
-    [{G,red}, [{L,black}, Ll, Lr],[{R,black}, [{Item,red},Rll,Rlr], Rr]];
-case1([{G,_}, 
+case1([{G,black}, 
+       [{L,red}, [{Lr, red}, Lll, Llr], Lr ], 
+       [{R,red},Rl,Rr]
+      ]) ->
+    [{G,red}, [{L,black}, [{Lr, red}, Lll, Llr],Lr], [{R,black},Rl,Rr]];
+case1([{G,black}, 
+       [{L,red}, Ll, [{Lr, red}, Lrl, Lrr]],
+       [{R,red},Rl,Rr]
+      ]) ->
+    [{G,red}, [{L,black}, Ll, [{Lr, red}, Lrl, Lrr]],[{R,black},Rl,Rr]];
+case1([{G,black}, 
+       [{L,red}, Ll, Lr], 
+       [{R,red},[{Rl,red},Rll,Rlr], Rr]
+      ]) ->
+    [{G,red}, [{L,black}, Ll, Lr],[{R,black}, [{Rl,red},Rll,Rlr], Rr]];
+case1([{G,black}, 
        [{L,red}, Ll, Lr],
-       [{R,red}, Rl, [{Item,red},Rrl,Rrr]]],       
-	Item) ->
-    [{G,red}, [{L,black}, Ll, Lr],[{R,black}, Rl, [{Item,red},Rrl,Rrr]]];
-case1(Tree, Item) ->
-    case2(Tree, Item).
+       [{R,red}, Rl, [{Rr,red},Rrl,Rrr]]
+      ]) ->
+    [{G,red}, [{L,black}, Ll, Lr],[{R,black}, Rl, [{Rr,red},Rrl,Rrr]]];
+case1(Tree) ->
+    case2(Tree).
 
 
 % Converting Zig-Zag shape to Zig-Zig
@@ -70,14 +76,17 @@ case1(Tree, Item) ->
 %    B    =>    C      and         B   =>    C
 %     \        /                  /           \
 %      C      B                  C             B 
-case2( [{G, _}, [{L,red}, Ll, [{Item, red}, Lrl, Lrr]], R] ,
-       Item) ->
-    case3([{G, red}, [{Item, black}, [{L, red}, Ll, Lrl], Lrr ], R], L);
-case2( [{G, _},L,[{R, red}, [{Item,red}, Rll, Rlr], Rr]],
-       Item) ->
-    case3([{G, red}, L,  [{Item, black}, Rll, [{R, red}, Rlr, Rr]]], R);
-case2( Tree, Item)  ->
-    case3(Tree, Item).
+case2( [{G, black}, 
+	[{L,red}, Ll, [{Lr, red}, Lrl, Lrr]], 
+	R]) ->
+    case3([{G, black}, [{Lr, black}, [{L, red}, Ll, Lrl], Lrr ], R]);
+case2( [{G, black},
+	L,
+	[{R, red}, [{Rl,red}, Rll, Rlr], Rr]
+       ]) ->
+    case3([{G, black}, L,  [{Rl, black}, Rll, [{R, red}, Rlr, Rr]]]);
+case2( Tree )  ->
+    case3(Tree).
 
 % Converting Zig-Zig to Bent Arrow shape
 %        A                     A
@@ -90,24 +99,15 @@ case2( Tree, Item)  ->
 %	   [{R, Rc}, Rl, Rr]
 %	  ], R) ->
 
-case3(
-  [{G, _}, 
-   [{L, _}, [{Ll,Lc},Lll,Llr], Lr ],
-   R
-  ],
-  Ll) ->    
+case3([{G, black},[{L, red}, [{Ll,red},Lll,Llr], Lr ], R ]) ->    
+    [{L, black}, 
+     [{Ll,red},Lll,Llr], 
+     [{G, red}, Lr, R] ];
 
-    [{L, black}, [{Ll,Lc},Lll,Llr], [{G, red}, Lr, R]];
-
-case3([{G, _}, 
-       L, 
-       [{R, _}, Rl, [{Rr,Rrc}, Rrl, Rrr]   ]
-      ],
-      Rr) ->
+case3([{G, black}, L, [{R, red}, Rl, [{Rr,red}, Rrl, Rrr]] ]) ->
     [{R, black}, 
      [{G, red}, L, Rl], 
-     [{Rr,Rrc}, Rrl, Rrr]
-    ];
+     [{Rr,red}, Rrl, Rrr] ];
 
-case3(Tree, _)->   
+case3(Tree)->   
     Tree.
