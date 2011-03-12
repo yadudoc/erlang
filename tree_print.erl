@@ -1,6 +1,6 @@
-% Prints the input red-black tree or normal tree in a 
-% graphical way using plain ascii characters and output
-% formatting
+% Prints the input red-black tree or normal tree 
+% in a graphical way using plain ascii characters 
+% and output formatting
 
 -module(tree_print).
 -export([

@@ -1,3 +1,4 @@
+% P26 Alternative logic
 %% LOGIC:
 %% do bottom up and each level up do a product with subset of that element with already calcualted product
 %% eg, 4C3 on (a, b, c, d), phi is denoted by %

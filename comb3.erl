@@ -1,3 +1,4 @@
+% P26 Alternative solution
 % return all permutations of N items from a given list
 
 % basic logic goes like this for list [a,b,c,d,e] and N = 3

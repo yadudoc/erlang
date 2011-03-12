@@ -1,3 +1,4 @@
+% Map Fold Filter
 % Sample on the 3 main list operations
 %	1. map			       
 %	2. fold					

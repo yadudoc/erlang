@@ -1,4 +1,4 @@
-%Removes the nth element from a given list
+% Removes the nth element from a given list
 
 -module(nth_rem).
 -export([rm/2]).

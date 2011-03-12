@@ -1,3 +1,4 @@
+% P26 Alternative logic
 % find n combinations from a given list of items
 % Suppose the list is [a,b,c,d,e] N=5 and we need 				
 % to find C(N,R=3) of the list. 

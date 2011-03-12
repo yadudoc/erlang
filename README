@@ -1,8 +1,68 @@
-This folder contains most of the problems i'm currently working on
-in order to get a hang of erlang.
+This folder contains most of the problems i'm currently 
+working on in order to get a hang of erlang.
 
 Main objectives are :
 1. Learn functional programming
 2. Learn Erlang 
 
 Thats all :) 
+
+############### Name - Problem Mapping ##################
+balanced_tree.erl % P55
+collect_internal.erl % P62
+collect_leaves.erl % P61A
+comb2.erl % P26 Alternative logic
+comb3.erl % P26 Alternative solution
+comb4.erl % P26
+comb.erl % P26 Alternative logic
+coprime.erl % P33
+count_leaves.erl % P61
+drop_nth.erl % P16
+dup.erl % P14
+duplicates.erl % P08
+factors.erl % P36
+flatten.erl % P07
+gcd.erl % P32
+goldbach.erl % P40
+gold_list.erl % P41
+graycode.erl % P49 
+huffman.erl % P-50
+imp_totient.erl % P37 
+insertat.erl % P21
+is_prime.erl % P31
+is_tree.erl % P54A
+lastbox.erl % P02
+last.erl % P01
+length.erl % P04
+lengthsort.erl % P28
+level_nodes.erl % P62B 
+list_of_primes.erl % P39
+list_ops.erl % Map Fold Filter
+list_reverse.erl % P05
+logic.erl % P46 & P46
+lotto.erl % P24
+nth_elem.erl % P03
+nth_rem.erl % Removes the nth element from a given list
+pack_duplicates.erl % P09
+palindrome.erl % P06
+permutations.erl % P25 
+prime_factor.erl % P35
+randelems.erl % P23
+randlist.erl % P25
+range.erl % P22
+rb_tree.erl % P59 
+removenth.erl % P20
+replicate.erl % P15
+rotaten.erl % P19
+runlength_decode.erl % P12
+runlength_encode.erl % P10 && P11
+slice.erl % P18
+splitn.erl % P17
+subsets.erl % P27
+symmetric_tree.erl % P56
+totient.erl % P34 
+tot_profiler.erl % P38
+tree.erl % P57
+tree_node.erl % P60 
+tree_print.erl % Prints the input red-black tree or normal tree 
+truth_table.erl % P48
