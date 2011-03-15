@@ -3,7 +3,8 @@
 -export([
 	 mapreduce/5,
 	 mapper/2,
-	 reducer/2
+	 reducer/2,
+	 addkeyvalue/2
 	]).
 
 
@@ -16,7 +17,7 @@ mapper(Reducer_pids, Mapfunc)->
 	    io:format("~n Mapper [~p] on job ~p",[self(),Input]),
 	    {K, V} = Mapfunc(Input),
 	    io:format("~n Result from [~p] is {~p, ~p}",[self(), K, V]),
-	    Rand_reducer = lists:nth((Input rem len(Reducer_pids))+1 ,
+	    Rand_reducer = lists:nth(erlang:phash(K, len(Reducer_pids)) ,
 				     Reducer_pids),
 	    Rand_reducer ! {reduce, {K, V}},
 	    mapper(Reducer_pids, Mapfunc);
@@ -24,21 +25,47 @@ mapper(Reducer_pids, Mapfunc)->
 	    io:format("~n Mapper ~p, Exiting ... ",[self()])
     end. 
 
-    
+% reducer function
+% waits for reduce message. 
+%    check the acc if messages with same key are present
+%                  if yes add value to its list
+%                  else add new key, value pair
+% wait for harvest message
+%    apply Redfunc on each key,value pair in the acc
+%    send the results to a harvestor
 reducer(Acc , Redfunc)->    
     receive 
-	{reduce, Value} ->
-	    io:format("~n Reducer ~p reducing ~p",[self(),Value]),
-	    Result = Redfunc(Value),
-	    reducer( [Result|Acc], Redfunc);
-	{harvest, Harvestor_pid} ->		    		    
-	    io:format("~nReducer ~p sending result for harvest~p",
-		      [self(),Acc]),
-	    Harvestor_pid ! {result, Acc },
-	    io:format("~nReducer ~p Exiting... ",[self()])
+	{reduce, {K,V}} ->
+	    io:format("~n Reducer ~p reducing ~p",[self(),{K,V}]),	    	
+	    reducer( addkeyvalue({K,V}, Acc) , Redfunc);
+	{harvest, Harvestor_pid} ->		    		   
+	    Reduced_result = lists:map(fun(X)-> Redfunc(X) end, Acc),
+	    io:format("~n Reducer ~p sending result for harvest~p",
+		      [self(),Reduced_result]),
+	    Harvestor_pid ! {result, Reduced_result },
+	    io:format("~n Reducer ~p Exiting... ",[self()])
     end.
-   
+  
+% Input is of type {Key, Value}
+% Search List for item with same Key
+%         if found add Value to the Value list in the pair
+%         else add {Key, Value} to the list			
+addkeyvalue(Input, List)->
+    addkeyvalue(Input, List, []).
 
+addkeyvalue({Key,V}, [], Acc)->
+    [{Key,V}|Acc];
+addkeyvalue({Key,V}, [{Key,List}|T], Acc)->
+    lists:append([{Key, [V|List]} | Acc],T);
+addkeyvalue({Key,V}, [H|T], Acc) ->
+    addkeyvalue({Key, V}, T, [H|Acc]).                
+    
+
+% We use a harvestor to finally return the results from the reducer
+% this is probably the worst part of this design
+% We wait for 2000 ms to ensure that the jobs are completed
+% then we send out one harvestor each for every reducer which 
+% collects the results from each reducer
 harvest(Pid_reducer) ->
     Pid_reducer ! {harvest, self()},
     receive
@@ -46,6 +73,14 @@ harvest(Pid_reducer) ->
 	    Result
     end.
     
+
+% main func
+% 1. Spawn reducers
+% 2. Spawn mappers
+% 3. process sends out the input to each mapper
+% 4. put main on sleep to allow computation to complete
+% 5. Send out harvestors to get results from the reducers
+% 6. Flatten the results list and sort it
 mapreduce(R_count, Rfunc, M_count, Mfunc, Input) -> 
     
     % Spawn off R_count number of reducer functions    
@@ -75,9 +110,10 @@ mapreduce(R_count, Rfunc, M_count, Mfunc, Input) ->
     lists:sort(lists:flatten(Result))
     .
     
-    
-process(Input, R_pids)->
-    process(Input, R_pids, []).
+   
+% Send an Input to appropriate mapper processes
+process(Input, M_pids)->
+    process(Input, M_pids, []).
 
 process([X|[]], [H|_], _)->
     H ! {map, X};
@@ -87,12 +123,14 @@ process([H|T], [H_pids|R_pids], R_pids_acc) ->
     H_pids ! {map, H},
     process(T, R_pids, [H_pids|R_pids_acc]).
     
+% length of a list
 len([])->
     0;
 len([_|T]) ->
     1+len(T).
 
-
+% Not in use.
+% sends a kill message to worker process
 killall([]) ->
     io:format("~n All processes sent die messages");   
 killall([H|T]) ->
