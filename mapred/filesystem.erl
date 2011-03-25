@@ -1,15 +1,9 @@
 -module(filesystem).
--import(mapreduce,
-	[
-	 start/1
-	 ]).
 -export([
 	 fs_client/1,
 	 fs_server/1,
 	 fs_server/2
 	 ]).
-
-
 
 fs_client(Path) ->
     filelib:wildcard(Path).

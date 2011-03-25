@@ -4,12 +4,11 @@
 	 task_tracker/0
 	 ]).
 
-
 start(Reg_name) ->
-    register( Reg_name, spawn(jobtracker, task_tracker, []) ),
-    io:format("task_tracker: Initialised and running ! ~n").
+    register( Reg_name, spawn(tasktracker, task_tracker, []) ).
+    %io:format("task_tracker: Initialised and running ! ~n").
 
-task_tracker()->
+task_tracker() ->
     receive
 	{job_tracker_live, Job_tracker} ->
 	    io:format("tast_tracker: Received broadcast from Job_tracker ~p~n",

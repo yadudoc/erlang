@@ -1,7 +1,5 @@
 -module(pingserver).
 -export([
-	 rpc_ping/1,
-	 rpc_pong/2,
 	 rpc_handler/2,
 	 start/1,
 	 ping_server/1,
@@ -19,10 +17,16 @@ ping(Node) ->
 	    {down, Node}
     end.
       
-
 pong() ->
     {node(), up}.
 
+ping_server(List) ->
+    Result = [ ping(Node) || Node <- List ],
+    [[ {Status, Node} || {Status, Node} <- Result ,
+			Status =:= up ],
+     [ {Status, Node} || {Status, Node} <- Result ,
+			Status =:= down ]
+    ].
 
 
 start(List) ->
@@ -30,7 +34,7 @@ start(List) ->
     io:format("~nstart: ping_server_pid registered to: ~p ~n",[Pid]).
     
    
-ping_server(List) ->
+server(List) ->
     io:format("ping_server: Task_tracker status-list: ~p~n",[List]),
     receive
 	{up, T_tracker, _, _} ->
@@ -48,7 +52,7 @@ ping_server(List) ->
 	    ping_server(List)
     end.
 	    
-rpc_ping(T_tracker) ->
+rpc1_ping(T_tracker) ->
     io:format("rpc_ping: Pinging T_tracker -> ~p~n",[T_tracker]), 
     {_,Timestamp1} = erlang:localtime(),
     Result = rpc:call(T_tracker, mapreduce, rpc_pong, [node(), self()]),
@@ -73,31 +77,12 @@ rpc_ping(T_tracker) ->
     end.
 
 				       
-rpc_pong(Origin, Server_pid) ->
+rpc1_pong(Origin, Server_pid) ->
     io:format("~nReceived ping from ~p ",[Origin]),
     rpc:call(Origin, mapreduce, rpc_handler, 
 	     [Server_pid, {ping, node()}]).
 
 rpc_handler(Pid, Request) ->
     Pid ! Request .
-
-% In case a ping is received from a node not in list its added to the list
-% By default the List contains only the node names
-% when an up message is received that node is replaced by
-% {node, up} or in case if its down by {node,down}
-
-% each case is explicitly stated here so that necessary triggers may be added 
-% later on.
-update( [], {Status, H} ) ->
-    [ {Status, H} ];
-update( [H|T] , {Status, H} ) ->
-    [ {H, Status} | T ];  
-update( [{H,down}|T], {up, H} ) ->
-    [ {H, up} | T ];
-update( [{H, up}|T], {down, H} ) ->
-    [ {H, down} | T ];
-update( [H|T] , Item ) ->
-    [ H | update(T, Item) ].
-
     
     
