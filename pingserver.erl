@@ -1,11 +1,29 @@
--module(mapreduce).
+-module(pingserver).
 -export([
 	 rpc_ping/1,
 	 rpc_pong/2,
 	 rpc_handler/2,
 	 start/1,
-	 ping_server/1
+	 ping_server/1,
+	 ping/1,
+	 pong/0
 	 ]).
+
+
+ping(Node) ->    
+    {N, Status} = rpc:call(Node, pingserver, pong, []),
+    if 
+	Status =:= up ->
+	    {Status, N};
+	Status =:= nodedown ->
+	    {down, Node}
+    end.
+      
+
+pong() ->
+    {node(), up}.
+
+
 
 start(List) ->
     Pid = register(ping_server_pid, spawn(mapreduce, ping_server, [List])),
