@@ -19,4 +19,3 @@ task_tracker() ->
     after 10000 ->
 	    task_tracker()
     end.
-
