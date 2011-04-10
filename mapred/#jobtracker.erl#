@@ -56,7 +56,7 @@ jtracker(Time) ->
 	    jtracker(Time);
 	{new_node, New_node} ->
 	    io:format("~n New node(s) found! ->  ~p",[New_node]),
-	    jtracker(Time);
+	    jtracker(Time);	
 	Any ->
 	    io:format("~n jTracker received message ~p",[Any]),
 	    jtracker(Time)
