@@ -231,7 +231,7 @@ task_tracker(discovered, Status) ->
 	
 	{die} ->
 	    io:format("task_tracker: Exiting...")
-    after 60000 ->	    	  
+    after 11000 ->	    	  
 	    [{jobtracker, JTracker}|[ [State] |_ ]] = Status,
 	    case State of
 		ready ->

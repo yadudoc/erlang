@@ -42,7 +42,8 @@ broadcaster(Reg_name, Time, Good_old) ->
 	New_node =/= [] ->
 	    jTracker ! {new_node, New_node};
 	true ->
-	    jTracker ! {no_new_node}
+	    %%jTracker ! {no_new_node}
+	    ok
     end,
     %% The following is a lame sleep implementation
     %% we want the broadcast only in a few minutes
@@ -67,7 +68,7 @@ broadcaster(Reg_name, Time, Good_old) ->
 %% Nodes is a list of ready/active nodes
 
 jtracker(Reg_name, Time, Functions, Files, Nodes) ->
-%%    io:format("~n File(s) ->  ~p",[File]),
+    io:format("~njtracker looping ~n"),
     receive 
 	{die} ->
 	    io:format("~n jTracker exiting...");
@@ -105,12 +106,12 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		      ),
 	    
 	    R_todo = roundrobin(Nodes, lists:seq(0,Num_reducers-1)),
-	    io:format("~nScheduling scheme : ~p~n",[R_todo]),
-	    
+	    io:format("~nScheduling scheme : ~p~n",[R_todo]),	    
+
 	    lists:map( fun([Node,Id]) ->
 			       rpc:sbcast([Node], Reg_name,
 					  {reducer_job_spawn, 
-					   fun(X)->{X,X} end,
+					   fun(X)->X end,
 						%Redfunc, 
 					   Id})
 		       end,
@@ -144,6 +145,7 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	%% 
 	%% Update the status and loop over.
 	{mapper_result_success, Node, Filename, Inter_files} ->	    
+
 	    io:format("~nmapper_result_success on ~p",[Filename]),
 	    io:format("~nCurrent files : ~p",[Files]),
 	    [ [InpTodo,InpDone],[IntTodo,IntDone],Result ] = Files,
@@ -152,7 +154,7 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    
 	    [ _ , [ _, _,[R_todo,[]] ]] = Functions,
 	    
-	    [Fname,_] = string:tokens(Filename),
+	    [Fname,_] = string:tokens(Filename,"."),
 
 	    lists:map( fun([Node, Id]) ->			       
 			       [Num] = io_lib:format("~p",[Id]),
@@ -175,8 +177,8 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	%% On completion of mapper, check if there any unassigned reducer jobs
 	%% which might be taken on.
 	{mapper_complete, Node} ->
-	    io:format("~n Mapping complete on node: ~p ",[Node]),
-	    
+
+	    io:format("~n Mapping complete on node: ~p ",[Node]),	    
 	    %% Once mapper is complete on one node, it can be 
 	    %% used as a reducer	    
 	    [[Mapfunc, Node_status],RED] =
