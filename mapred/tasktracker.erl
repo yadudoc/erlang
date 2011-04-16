@@ -74,7 +74,7 @@ task_tracker(discovered, Status) ->
 	{global_die} ->
 	    [ _ | [[Stat]|_] ] = Status,
 	    if 
-		Stat =/= active_map, Stat =/= active_reduce ->
+		Stat =/= active ->
 		    mapper ! {die}
 	    end,	          	    
 	    io:format("~ntask_tracker dying.. ~n");
@@ -101,7 +101,7 @@ task_tracker(discovered, Status) ->
 		    io:format("~n Received Map Job~n"),
 		    task_tracker(discovered,     %% Task_tracker status  
 				 [{jobtracker,JTnode}, %% Job_tracker details   
-				  [active_map],      %% Current status
+				  [active],      %% Current status
 				  [Input_files, [], []], %% Input files 
 				  [[], [], []],  %% Intermediate files
 				  []             %% Result files
@@ -129,7 +129,7 @@ task_tracker(discovered, Status) ->
 					  node(), Filename, Inter_files}),
 	    task_tracker(discovered,   
 			 [{jobtracker,JTnode} ,     
-			  [active_map],    
+			  [active],    
 			  [Input_mfiles -- Filename,
 			   Done_mfiles ++ Filename,
 			   Bad_mfiles],
@@ -152,7 +152,7 @@ task_tracker(discovered, Status) ->
 	    io:format("~n Mapping complete! "),
 	    task_tracker(discovered,   
 			 [{jobtracker,JTnode} ,     
-			  [ready],    
+			  [active],    
 			  [Input_mfiles, Done_mfiles, Bad_mfiles],
 			  [Int_rfiles , Done_rfiles, Bad_rfile],
 			  Resultfiles
@@ -170,7 +170,7 @@ task_tracker(discovered, Status) ->
 	    ] = Status,
 	    task_tracker(discovered,   
 			 [{jobtracker,JTnode},
-			  [active_map],    
+			  [active],    
 			  [Input_mfiles -- Filename, 
 			   Done_mfiles , 
 			   Bad_mfiles ++ Filename],
@@ -181,21 +181,17 @@ task_tracker(discovered, Status) ->
 	    rpc:sbcast([JTnode],jTracker,{mapper_result_success, 
 				      node(), Filename});
 
-	%% Accept and process reduce jobs
+	%% Request for spawning a 
 	%% The reduce function and an Id is passed to the job
-	{reduce_job, Redfunc, Id}->
+	{reducer_job_spawn, Redfunc, Id}->
 	    
-	    [{jobtracker,JTnode},
-	     [State], 
-	     [Input_mfiles, Done_mfiles, Bad_mfiles],
-	     [Int_rfiles, Done_rfiles, Bad_rfile],
-	     Resultfiles
-	    ] = Status,
+	    [{jobtracker,JTnode} | [[State]|T] ] = Status,
 	    [Num] = io_lib:format("~p",[Id]),
 	    Name = list_to_atom("reducer" ++ Num),
 
 	    io:format("~nSpawning Reducer ~p on Node ~p~n",[Name, node()]),
-	    register(Name,spawn(reducer,reducer,
+	    
+	    register( Name, spawn(reducer,reducer,
 				[Redfunc,
 				 [],
 				 self(),
@@ -203,13 +199,8 @@ task_tracker(discovered, Status) ->
 				 [[],[]]
 				])),
 	    task_tracker(discovered,   
-			 [{jobtracker,JTnode},
-			  [active_reduce],    
-			  [Input_mfiles, Done_mfiles, Bad_mfiles],
-			  [Int_rfiles , Done_rfiles, Bad_rfile],
-			  Resultfiles
-			 ]);
-	
+			 [{jobtracker,JTnode}|[ [active] | T]]
+			 );
 
 	%% This here justs acts as a relay
 	{reduce_files, Files, Id} ->	    
@@ -218,35 +209,34 @@ task_tracker(discovered, Status) ->
 	    Name ! {reduce_files, Files, Id},
 	    task_tracker(discovered, Status);
 	
-	%% reply from the reducer.
+
+	%% Request from the jobtracker to get results from the Reducer
+	{reduce_return, Id} ->
+	    [Num] = io_lib:format("~p",[Id]),
+	    Name = list_to_atom("reducer" ++ Num),
+	    Name ! {reduce_return, Id},
+	    task_tracker(discovered, Status);	
+
+	%% Reply from the reducer.
 	%% relay filename to the jobtracker
-	{reduce_return_filename, Filename, [Done,Bad]} ->	    
+	{reduce_return_filename, Id,Filename, [Done,Bad]} ->	    
 
 	    [{jobtracker,JTnode}|_] = Status,
 
 	    rpc:sbcast(JTnode, jTracker, 
-		       {reduce_return_filename, node(),
+		       {reduce_return_filename, Id, node(),
 			Filename, [Done,Bad]}),
-
+	    
 	    task_tracker(discovered, Status);	
-		
-		   	
-	%% Update status and loop task_tracker
-	%% send result update to job_tracker
-	{reducer_result, _}
-	->
-	    ok;	    
- 
+	
 	{die} ->
 	    io:format("task_tracker: Exiting...")
-    after 12000 ->	    	  
+    after 60000 ->	    	  
 	    [{jobtracker, JTracker}|[ [State] |_ ]] = Status,
 	    case State of
 		ready ->
 		    task_tracker(discovery, JTracker);
-		active_map ->		    
-		    task_tracker(discovered, Status);
-		active_reduce ->		    
+		active ->		    
 		    task_tracker(discovered, Status);
 		done ->
 		    task_tracker(discovery, JTracker)

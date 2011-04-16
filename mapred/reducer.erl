@@ -7,7 +7,7 @@
 
 
 %% The main reducer thread.
-%%   
+%% 
 %% 1. On receiving a reduce_files request
 %%     1. apply readinputs on the Files
 %%     2. get the sorted_Results and apply Reducer function
@@ -16,8 +16,10 @@
 %% 3. reduce_return Id
 %%     1. Write the result to file
 %%     2. return the result filename to tracker
+%% NOTE: THE LIST OF FILES PASSED TO THE reducer MUST BE OF THE FORM
+%%   [ [node,file1], [node, file2] ...]
 reducer(Redfunc, Acc, Tracker, Id, [Done, Bad]) ->
-    io:format("~nAcc  ~p~n, Files ~p~n",[Acc,[Done,Bad]]),
+%%    io:format("~nAcc  ~p~n Files ~p~n",[Acc,[Done,Bad]]),
     receive
 	{reduce_files, Files, Id} ->	    
 	    [Sorted_inputs ,[New_good,New_bad]] = 
@@ -40,8 +42,9 @@ reducer(Redfunc, Acc, Tracker, Id, [Done, Bad]) ->
 	    [N] = io_lib:format("~p",[Id]),
 	    Out = "MapReduce_result_" ++ N ++ ".res",
 	    fileio:writelines(write,Out,Acc),
-	    Tracker ! {reduce_return_filename, Out, [Done,Bad]},
-	    io:format("~nreducer returning Acc ~p~n",[Acc])	    
+	    Tracker ! {reduce_return_filename, Id, Out, [Done,Bad]},
+	    io:format("~nReducer writing to file ~p~n Acc ~p ~n",
+		      [Out,Acc])	    
     end.
 
 

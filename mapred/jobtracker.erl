@@ -105,10 +105,14 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		      ),
 	    
 	    R_todo = roundrobin(Nodes, lists:seq(0,Num_reducers-1)),
+	    io:format("~nScheduling scheme : ~p~n",[R_todo]),
 	    
 	    lists:map( fun([Node,Id]) ->
 			       rpc:sbcast([Node], Reg_name,
-					  {reduce_job, Redfunc, Id})
+					  {reducer_job_spawn, 
+					   fun(X)->{X,X} end,
+						%Redfunc, 
+					   Id})
 		       end,
 		       R_todo ),
 	    
@@ -118,7 +122,8 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		     ],		     
 		     Files, 
 		     Nodes);
-	
+						    
+
 	%% On making a map request the task_tracker responds immediately 
 	%% by sending a copy of the list of input files. This is updated 
 	%% on the jobtracker
@@ -153,7 +158,7 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 			       [Num] = io_lib:format("~p",[Id]),
 			       Oname = Fname ++ "_" ++ Num ++ ".int",
 			       rpc:sbcast([Node],Reg_name,
-					  {reduce_files, Oname, Id})
+					  {reduce_files, [[Node,Oname]], Id})
 		       end,
 		       R_todo ),
 
@@ -195,17 +200,21 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		     );
 		    
 	%% Last arg is [Done,Bad] which is not used here.
-	{reduce_return_filename, Node, Filename, [_,_]} ->
+	{reduce_return_filename, Id, Node, Filename, [_,_]} ->
 	    io:format("~nReducer returned file : ~p on ~p~n",[Filename,Node]);
-					  
+	
+	%% This is just to know the status of the jobtracker without 
+	%% interrupting its operations.
 	{jobtracker_status} ->
 	    io:format("~n Functions : ~p",[Functions]),
 	    io:format("~n Files : ~p",[Files]),
-	    io:format("~n Nodes : ~p~n",[Nodes]);
+	    io:format("~n Nodes : ~p~n",[Nodes]),
+	    jtracker(Reg_name, Time, Functions, Files, Nodes);
+			
 	  
 	%% flush for all weird messages 
 	Any ->
-	    io:format("~n jTracker received message ~p",[Any]),
+	    io:format("~n jTracker received a WEIRD message ~p~n",[Any]),
 	    jtracker(Reg_name, Time, Functions, Files, Nodes)
     end.
 	        	    	          
