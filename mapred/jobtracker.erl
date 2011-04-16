@@ -1,6 +1,6 @@
 -module(jobtracker).
 -export([
-	 start/2,
+	 start/1,
 %%	 broadcast/1,
 	 broadcaster/3,
 	 submit_job/0,
@@ -16,10 +16,11 @@ broadcast(Reg_name)->
 % Repeatedly broadcast every set duration to identify new nodes
 % We only check for new nodes. 
 % NOTE : WE ARE NOT HANDLING NODES GOING DOWN HERE
-start(Reg_name, Time)->    
+start(Reg_name)->    
     %% spawn the jobtracker with registered name mr_jobtracker
     register( 'bCaster' , spawn(jobtracker,broadcaster, 
-				    [Reg_name, Time, []])),
+				    [Reg_name, 5000, []]
+			       )),
     io:format("~n Jobtracker: Broadcaster is Up!"),
     
     register( 'jTracker', spawn(jobtracker, jtracker, 
@@ -82,8 +83,9 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    jtracker(Reg_name, Time, Functions, Files, Nodes);
 	
 	%% Notifies us of a new node.
+	%% TODO: when new node joins start map job.
 	{new_node, New_node} ->
-	    io:format("~n New node(s) found! ->  ~p~n",[New_node]),
+	    io:format("~n New node(s) found! ->  ~p~n",[New_node]),	    
 	    jtracker(Reg_name, Time, Functions, Files, Nodes++New_node );
 	
 		
@@ -91,7 +93,8 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	%%  
 	%% We add a new job_request here.
 	%% First the map is done on all available nodes
-	%% Reduce is kept waiting till some of the map returns results
+	%% We spawn Num_reducers number of reducers and
+	%% keep them waiting till mappers return results
 	{job_request, Mapfunc, Inp_pattern, Num_mappers, 
 	 Redfunc, Num_reducers} when Functions =:= [] ->
 	    io:format("~n Requesting map job at nodes ~p",[Nodes]),
@@ -100,10 +103,21 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		       {job_tracker_map, Mapfunc, Inp_pattern, 
 			Num_mappers, Num_reducers}
 		      ),
-	    jtracker(Reg_name,Time, 
-		     [Mapfunc, [Redfunc,Num_reducers,[]]],
-		     Files, Nodes);
-
+	    
+	    R_todo = roundrobin(Nodes, lists:seq(0,Num_reducers-1)),
+	    
+	    lists:map( fun([Node,Id]) ->
+			       rpc:sbcast([Node], Reg_name,
+					  {reduce_job, Redfunc, Id})
+		       end,
+		       R_todo ),
+	    
+	    jtracker(Reg_name,Time, 	                       
+		     [[Mapfunc, [[N,active]|| N<-Nodes] ],
+		      [Redfunc,Num_reducers,[R_todo,[]] ]
+		     ],		     
+		     Files, 
+		     Nodes);
 	
 	%% On making a map request the task_tracker responds immediately 
 	%% by sending a copy of the list of input files. This is updated 
@@ -128,7 +142,21 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    io:format("~nmapper_result_success on ~p",[Filename]),
 	    io:format("~nCurrent files : ~p",[Files]),
 	    [ [InpTodo,InpDone],[IntTodo,IntDone],Result ] = Files,
+	    
 	    Temp = [ [Node,F] || F <- Inter_files],
+	    
+	    [ _ , [ _, _,[R_todo,[]] ]] = Functions,
+	    
+	    [Fname,_] = string:tokens(Filename),
+
+	    lists:map( fun([Node, Id]) ->			       
+			       [Num] = io_lib:format("~p",[Id]),
+			       Oname = Fname ++ "_" ++ Num ++ ".int",
+			       rpc:sbcast([Node],Reg_name,
+					  {reduce_files, Oname, Id})
+		       end,
+		       R_todo ),
+
 	    jtracker(Reg_name, Time, Functions,
 		     [ [InpTodo -- [[Node,Filename]], 
 			InpDone++[[Node,Filename]]],
@@ -143,9 +171,38 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	%% which might be taken on.
 	{mapper_complete, Node} ->
 	    io:format("~n Mapping complete on node: ~p ",[Node]),
-	    jtracker(Reg_name, Time, Functions, Files, Nodes);
-
-
+	    
+	    %% Once mapper is complete on one node, it can be 
+	    %% used as a reducer	    
+	    [[Mapfunc, Node_status],RED] =
+				Functions,
+	    New_node_status =  ((Node_status -- [Node,active]) 
+				++ [Node,complete]),
+	    
+	    case
+		lists:filter(fun([_,S]) -> S=:=active end, New_node_status) 
+	    of
+		[] ->
+		    io:format("All map jobs are complete");
+		_ ->
+		    ok
+	    end,
+	    
+	    jtracker(Reg_name, Time,
+		     [[Mapfunc, New_node_status], RED],
+		     Files,
+		     Nodes
+		     );
+		    
+	%% Last arg is [Done,Bad] which is not used here.
+	{reduce_return_filename, Node, Filename, [_,_]} ->
+	    io:format("~nReducer returned file : ~p on ~p~n",[Filename,Node]);
+					  
+	{jobtracker_status} ->
+	    io:format("~n Functions : ~p",[Functions]),
+	    io:format("~n Files : ~p",[Files]),
+	    io:format("~n Nodes : ~p~n",[Nodes]);
+	  
 	%% flush for all weird messages 
 	Any ->
 	    io:format("~n jTracker received message ~p",[Any]),
@@ -162,14 +219,10 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 submit_job() ->
 
     jTracker ! {job_request, 
-		fun(X)->
-			
-%%			[H|_] = lists:reverse(
-%%				  prime_factor:pf(list_to_integer(X))
-%%				 ),
-			H = list_to_integer(X) + 1,
+		fun(X)->                 %%  Mapfunc 
+			H = list_to_integer(X) div 10,
 			{X,H}
-		end,     %%  Mapfunc
+		end,    
 		"Data/*.map",            %%  Inp_pattern
 		3,                       %%  Num_mappers		
 		fun(X)->{X} end,         %%  Redfunc
@@ -177,11 +230,21 @@ submit_job() ->
 	       }.
 
 
-%%len([]) ->
-%%    0;
-%%len([H|T]) ->
-%%    1+len(T).
+%len([]) ->
+%    0;
+%len([_|T]) ->
+%    1+len(T).
 
+
+roundrobin(List, Id) ->
+    roundrobin(List, List, Id, []).
+
+roundrobin(List, [H|T], [Hi|Ti], Acc)->
+    roundrobin(List, T, Ti,  [[H,Hi] | Acc]);
+roundrobin(List, [], Id, Acc) ->
+    roundrobin(List, List, Id, Acc);
+roundrobin(_, _, [], Acc) ->
+    lists:reverse(Acc).
     
     
 

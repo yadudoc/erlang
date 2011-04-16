@@ -2,17 +2,16 @@
 -export([
 	 start/2,
 	 task_tracker/2,
-	 reducer/5,
-	 readinputs/2,
 	 yoyo/0,
-	 testfun/1,
 	 yoyo/1	 
 	 ]).
 
 -import(mapper,
-	[
-	 mapper/6
-	 ]).
+	[ mapper/6 ]).
+
+-import(reducer,
+	[ reducer/5 ]).
+
 
 %% yoyo server is here only for debugging purposes
 yoyo()->
@@ -25,120 +24,13 @@ yoyo(loop) ->
     end.
 
 
-%% From a given list of intermediate files passed thrrough @Files
-%% remove the ones which are already processed.
-%% The local files are listed first for being processed first.
-readinputs( Files, [Done, Bad] ) ->   
-    
-    %% remove all files which are already processed
-    Temp = [ [N,F] || [N,F] <- Files,
-		      Done =:= Done -- [F] ],    
-
-    %% Place files present on the local node at the beginning
-    Temp2 = lists:append(
-	      lists:filter(fun([N,_])->
-				   N =:= node()
-			   end,
-			   Temp),
-	      lists:filter(fun([N,_])->
-				   N =/= node()
-			   end,
-		 Temp)
-	     ),    
-    readinputs( Temp2, [], [Done,Bad]).
-		 
-
-readinputs([[Node,Filename]|T], Acc, [Done, Bad] )->
-
-    case [Filename] -- Done of
-	%% File not present in Done list
-	[Filename] ->
-	    case Node =:= node() of
-		false ->
-%%		    io:format("~n Accessing file ~p on ~p",[Filename,Node]),
-		    {Status, Contents} = 
-			rpc:call(Node, fileio, readline, [Filename]);
-		true ->
-%%		    io:format("~n Accessing local-file ~p",[Filename]),
-		    {Status, Contents} =
-			fileio:readline(Filename)
-	    end,
-	    
-	    case Status of
-		error ->
-		    readinputs(T,Acc,[Done, Bad++[Filename]]);
-		ok ->
-		    readinputs(T,
-			       lists:append(Acc,Contents),
-			       [Done ++ [Filename], Bad]
-			       )
-	    end;
-	
-	%% File is already processed
-	[] ->
-		   readinputs(T,[Done,Bad])	    	        
-    end;
-	     
-readinputs([], Acc, [Done,Bad]) ->
-    [ lists:sort(Acc), [Done,Bad] ].
-    		
-
-%%reducer(Redfunc, Tracker, Acc) ->
-%%    receive
-%%	{reduce_list, List} ->
-%% WE are applying the reducer function here !!
-reducer(Redfunc, Acc, Tracker, Id, [Done, Bad]) ->
-    io:format("~nAcc  ~p~n, Files ~p~n",[Acc,[Done,Bad]]),
-    receive
-	{reduce_files, Files, Id} ->	    
-	    [Sorted_inputs ,[New_good,New_bad]] = 
-		readinputs(Files, [Done,Bad]),  
-%%	    io:format("~nreducer, sorted results = ~p",[Sorted_inputs]),
-	    io:format("~nreducer, after reducing = ~p~n",
-		      [Redfunc(Sorted_inputs)]),	    
-	    reducer(Redfunc,
-		    Redfunc(Sorted_inputs),
-		    Tracker,
-		    Id,
-		    [ (Done -- New_good) ++ New_good ,
-		      (Bad  -- New_bad ) ++ New_bad ]
-		   );
-	
-	{die} ->
-	    io:format("~n reducer dying...~n");
-	
-	{reduce_return, Id} ->	    
-	    Tracker ! {reduce_return, Acc, [Done,Bad]},
-	    io:format("~nreducer returning Acc ~p~n",[Acc])	    
-    end.
-
-testfun([])->
-    [];
-
-testfun([H|T]) ->    
-    [K,V] = [ {list_to_integer(X)} || X <- string:tokens(H,",") ],
-    testfun(T, K, V,[]).
-
-testfun([H|T], PreKey, PreVal, Acc)->
-    [K,V] = [ {list_to_integer(X)} || X <- string:tokens(H,",") ],
-    
-    case K =:= PreKey of
-	false ->
-	    testfun(T, K, V, [ [PreKey,PreVal] | Acc ]);
-	true ->
-	    {V1} = PreVal,
-	    {V2} = V,
-	    testfun(T, K, {V1+V2}, Acc)
-    end;
-
-testfun([], PreKey, PreVal, Acc) ->
-    lists:reverse ([ [PreKey,PreVal]|Acc]).
-
-
+%% Main thread initialiser
+%% Spawn off the tasktracker.
 start(Reg_name, Job_tracker) ->
     register( Reg_name, spawn(tasktracker, task_tracker, 
 			      [discovery, Job_tracker]) ).
-    %io:format("task_tracker: Initialised and running ! ~n").
+
+
 
 %% The task tracker - Discovery stage
 %% pings the main server which has the jobtracker 
@@ -246,6 +138,7 @@ task_tracker(discovered, Status) ->
 			 ]
 			);	
 	    
+	
 	%% Mapper is finished processing all files matching the input pattern
 	{mapper_complete}
 	->
@@ -265,7 +158,8 @@ task_tracker(discovered, Status) ->
 			  Resultfiles
 			 ]
 			);	
-	    	     
+	
+    	     
 	{mapper_result_failure, Filename} 
 	->
 	    [{jobtracker,JTnode},
@@ -297,59 +191,52 @@ task_tracker(discovered, Status) ->
 	     [Int_rfiles, Done_rfiles, Bad_rfile],
 	     Resultfiles
 	    ] = Status,
-	    
-	    case State of
-		ready ->
-		    register('reducer',spawn(tasktracker,reducer,
-					     [Redfunc,
-					      [],
-					      self(),
-					      Id,
-					      [[],[]]
-					     ])),
-		    task_tracker(discovered,   
-				 [{jobtracker,JTnode},
-				  [active_reduce],    
-				  [Input_mfiles, Done_mfiles, Bad_mfiles],
-				  [Int_rfiles , Done_rfiles, Bad_rfile],
-				  Resultfiles
-				 ]);
+	    [Num] = io_lib:format("~p",[Id]),
+	    Name = list_to_atom("reducer" ++ Num),
+
+	    io:format("~nSpawning Reducer ~p on Node ~p~n",[Name, node()]),
+	    register(Name,spawn(reducer,reducer,
+				[Redfunc,
+				 [],
+				 self(),
+				 Id,
+				 [[],[]]
+				])),
+	    task_tracker(discovered,   
+			 [{jobtracker,JTnode},
+			  [active_reduce],    
+			  [Input_mfiles, Done_mfiles, Bad_mfiles],
+			  [Int_rfiles , Done_rfiles, Bad_rfile],
+			  Resultfiles
+			 ]);
+	
+
+	%% This here justs acts as a relay
+	{reduce_files, Files, Id} ->	    
+	    [Num] = io_lib:format("~p",[Id]),
+	    Name = list_to_atom("reducer" ++ Num),
+	    Name ! {reduce_files, Files, Id},
+	    task_tracker(discovered, Status);
+	
+	%% reply from the reducer.
+	%% relay filename to the jobtracker
+	{reduce_return_filename, Filename, [Done,Bad]} ->	    
+
+	    [{jobtracker,JTnode}|_] = Status,
+
+	    rpc:sbcast(JTnode, jTracker, 
+		       {reduce_return_filename, node(),
+			Filename, [Done,Bad]}),
+
+	    task_tracker(discovered, Status);	
 		
-		done ->
-		    register('reducer',spawn(tasktracker,reducer,
-					     [Redfunc,
-					      [],
-					      self(),
-					      Id,
-					      [[],[]]
-					     ])),
-			     
-		    task_tracker(discovered,   
-				 [{jobtracker,JTnode},
-				  [active_reduce],    
-				  [Input_mfiles, Done_mfiles, Bad_mfiles],
-				  [Int_rfiles , Done_rfiles, Bad_rfile],
-				  Resultfiles
-				 ]
-				);		
-		_ ->
-		    io:format("~n Only one reducer at a time"),
-		    task_tracker(discovered,   
-				 [{jobtracker,JTnode},
-				  [State],    
-				  [Input_mfiles, Done_mfiles, Bad_mfiles],
-				  [Int_rfiles , Done_rfiles, Bad_rfile],
-				  Resultfiles
-				 ])
-	    end;
-			
 		   	
 	%% Update status and loop task_tracker
 	%% send result update to job_tracker
 	{reducer_result, _}
 	->
 	    ok;	    
-
+ 
 	{die} ->
 	    io:format("task_tracker: Exiting...")
     after 12000 ->	    	  

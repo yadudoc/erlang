@@ -95,8 +95,6 @@ mworker(Mapperfun, Filename, Num_reducers, Mapper_id ) ->
 
 	    [Fname | _ ] = string:tokens(Filename,"."),
 	    
-	    
-
 	    lists:foldl( fun(X, Acc) ->	
 				 [Num] = io_lib:format("~p",[Acc]),
 				 Out = Fname ++"_" ++Num++ ".int" ,
