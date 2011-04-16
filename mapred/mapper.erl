@@ -14,7 +14,7 @@ mapper(_, [[], [], _, _], _, _, Task_tracker, _) ->
 %% ensures that only the specified number of mappers are running
 mapper(Mapperfunc, [Todo, Processing, Done, Badfile],
        Num_mappers, Num_reducers, Task_tracker, WorkerCount) ->
-    io:format("~n mapper files : ~p ~n",[{Todo,Processing,Done}]),
+%%    io:format("~n mapper files : ~p ~n",[{Todo,Processing,Done}]),
     Me = self(),
     if
 %%	Todo =:= [] , Processing =:= [] ->

@@ -108,8 +108,8 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    R_todo = roundrobin(Nodes, lists:seq(0,Num_reducers-1)),
 	    io:format("~nScheduling scheme : ~p~n",[R_todo]),	    
 
-	    lists:map( fun([Node,Id]) ->
-			       rpc:sbcast([Node], Reg_name,
+	    lists:map( fun([N,Id]) ->
+			       rpc:sbcast([N], Reg_name,
 					  {reducer_job_spawn, 
 					   fun(X)->X end,
 						%Redfunc, 
@@ -147,7 +147,7 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	{mapper_result_success, Node, Filename, Inter_files} ->	    
 
 	    io:format("~nmapper_result_success on ~p",[Filename]),
-	    io:format("~nCurrent files : ~p",[Files]),
+
 	    [ [InpTodo,InpDone],[IntTodo,IntDone],Result ] = Files,
 	    
 	    Temp = [ [Node,F] || F <- Inter_files],
@@ -156,11 +156,11 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    
 	    [Fname,_] = string:tokens(Filename,"."),
 
-	    lists:map( fun([Node, Id]) ->			       
+	    lists:map( fun([N, Id]) ->			       
 			       [Num] = io_lib:format("~p",[Id]),
 			       Oname = Fname ++ "_" ++ Num ++ ".int",
-			       rpc:sbcast([Node],Reg_name,
-					  {reduce_files, [[Node,Oname]], Id})
+			       rpc:sbcast([N],Reg_name,
+					  {reduce_files, [[N,Oname]], Id})
 		       end,
 		       R_todo ),
 
@@ -178,7 +178,7 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	%% which might be taken on.
 	{mapper_complete, Node} ->
 
-	    io:format("~n Mapping complete on node: ~p ",[Node]),	    
+	    io:format("~nMapping complete on node: ~p ",[Node]),	    
 	    %% Once mapper is complete on one node, it can be 
 	    %% used as a reducer	    
 	    [[Mapfunc, Node_status],RED] =
@@ -186,11 +186,23 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 	    New_node_status =  ((Node_status -- [Node,active]) 
 				++ [Node,complete]),
 	    
+	    
+	    [ [InpTodo,_],_, _ ] = Files,
+	    [ _ , [ _, _,[R_todo,[]] ]] = Functions,
+	    
 	    case
-		lists:filter(fun([_,S]) -> S=:=active end, New_node_status) 
+		%%lists:filter(fun([_,S]) -> S=:=active end, New_node_status) 
+		InpTodo
 	    of
 		[] ->
-		    io:format("All map jobs are complete");
+		    io:format("~nAll map jobs are complete"),
+		    io:format("~nRequesting completion of reducers~n"),
+		    
+		    lists:map(fun([N,Id]) ->
+				      rpc:sbcast([N],Reg_name,
+						 {reduce_return, Id})
+			      end,
+			      R_todo);		    
 		_ ->
 		    ok
 	    end,
@@ -203,7 +215,9 @@ jtracker(Reg_name, Time, Functions, Files, Nodes) ->
 		    
 	%% Last arg is [Done,Bad] which is not used here.
 	{reduce_return_filename, Id, Node, Filename, [_,_]} ->
-	    io:format("~nReducer returned file : ~p on ~p~n",[Filename,Node]);
+	    io:format("~nReducer returned file(id:~p) : ~p on ~p~n",
+		      [Id,Filename,Node]),
+	    jtracker(Reg_name, Time, Functions, Files, Nodes);
 	
 	%% This is just to know the status of the jobtracker without 
 	%% interrupting its operations.

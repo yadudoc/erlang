@@ -219,18 +219,22 @@ task_tracker(discovered, Status) ->
 
 	%% Reply from the reducer.
 	%% relay filename to the jobtracker
-	{reduce_return_filename, Id,Filename, [Done,Bad]} ->	    
+	{reduce_return_filename, Id,Filename, [_,_]} ->	    
 
 	    [{jobtracker,JTnode}|_] = Status,
 
 	    rpc:sbcast(JTnode, jTracker, 
 		       {reduce_return_filename, Id, node(),
-			Filename, [Done,Bad]}),
+			Filename, [[],[]]}),
 	    
 	    task_tracker(discovered, Status);	
 	
 	{die} ->
-	    io:format("task_tracker: Exiting...")
+	    io:format("task_tracker: Exiting...~n");
+	
+	Any ->
+	    io:format("~ntask_tracker: Received a weird message ~p~n",[Any]),
+	    task_tracker(discovered, Status)
     after 11000 ->	    	  
 	    [{jobtracker, JTracker}|[ [State] |_ ]] = Status,
 	    case State of

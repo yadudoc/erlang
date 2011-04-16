@@ -25,8 +25,8 @@ reducer(Redfunc, Acc, Tracker, Id, [Done, Bad]) ->
 	    [Sorted_inputs ,[New_good,New_bad]] = 
 		readinputs(Files, [Done,Bad]),  
 %%	    io:format("~nreducer, sorted results = ~p",[Sorted_inputs]),
-	    io:format("~nreducer, after reducing = ~p~n",
-		      [Redfunc(Sorted_inputs)]),	    
+	    io:format("~nReducing file(s) = ~p",
+		      [Files]),	    
 	    reducer(Redfunc,
 		    Redfunc(Sorted_inputs),
 		    Tracker,
