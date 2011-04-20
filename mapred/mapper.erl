@@ -36,7 +36,7 @@ mapper(Mapperfunc, [Todo, Processing, Done, Badfile],
 
     receive
 	{mapper_success, Me, Inp_file, Int_files} ->	    
-	    io:format("Mapper: ~p done~n",[Inp_file]),
+	    io:format("~nMapper: ~p done",[Inp_file]),
 	    Task_tracker ! {mapper_result_success, Inp_file, Int_files},
 	    mapper(Mapperfunc, 
 		   [Todo,

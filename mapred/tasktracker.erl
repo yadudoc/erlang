@@ -219,13 +219,13 @@ task_tracker(discovered, Status) ->
 
 	%% Reply from the reducer.
 	%% relay filename to the jobtracker
-	{reduce_return_filename, Id,Filename, [_,_]} ->	    
+	{reduce_return_filename, Id,Filename, [Done,Bad]} ->	    
 
 	    [{jobtracker,JTnode}|_] = Status,
 
-	    rpc:sbcast(JTnode, jTracker, 
+	    rpc:sbcast([JTnode], jTracker, 
 		       {reduce_return_filename, Id, node(),
-			Filename, [[],[]]}),
+			Filename, [Done,Bad]}),
 	    
 	    task_tracker(discovered, Status);	
 	
